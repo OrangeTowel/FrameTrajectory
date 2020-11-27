@@ -2,10 +2,7 @@ import sys
 import os
 from typing import Dict, List, Any, Union
 import numpy as np
-import scipy.linalg as sl
-import matplotlib.pyplot as plt
-
-#sys.path.insert(1, os.path.join(sys.path[0], '/home/debruin/PhD/Code/DNA_python_scripts/'))
+#import matplotlib.pyplot as plt
 
 from SE3 import SE3element, SE3
 from SO3 import SO3element, SO3, so3element, so3
@@ -56,7 +53,7 @@ class FrameTrajectory:
         """
         Constructs a new trajectory which contains the two trajectories together by appending one to the other.
         """
-        new_traj = FrameTrajectory(name=self.name+'+'+other.name, n_timeframes=self.n_timeframes+other.n_timeframes)
+        new_traj = FrameTrajectory(name=f'{self.name}+{other.name}', n_timeframes=self.n_timeframes+other.n_timeframes)
         new_traj.frames[0:self.n_timeframes] = self.frames[0:self.n_timeframes]
         new_traj.frames[self.n_timeframes : self.n_timeframes+other.n_timeframes] = other.frames[0:other.n_timeframes]
 
@@ -83,7 +80,7 @@ class FrameTrajectory:
         if len(self) != len(other):
             raise ValueError("Trajectories do not have the same size")
 
-        new_traj = FrameTrajectory(name=self.name+'*'+other.name, n_timeframes=self.n_timeframes)
+        new_traj = FrameTrajectory(name=f'{self.name}*{other.name}', n_timeframes=self.n_timeframes)
         new_traj.frames = np.matmul(self.frames[:self.n_timeframes], other.frames[:other.n_timeframes])
 
         return new_traj
@@ -106,7 +103,6 @@ class FrameTrajectory:
         else:
             raise ValueError("incorrect index in FrameTrajectory __getitem__")
 
-    #def __setitem__(self, key: Union[int, slice], value: Union[SE3element, List[SE3element]]) -> None:
     def __setitem__(self, key: Union[int, slice], value: Union[SE3element, 'FrameTrajectory']) -> None:
         """
         Overloads the [] operator for setting values. key is and int or a slice.
@@ -117,10 +113,7 @@ class FrameTrajectory:
             n_timeframes: int = len(range(*key.indices(len(self.all_frames))))
             if n_timeframes != len(value):
                 raise ValueError("different lengths of indices and traj in FrameTrajectory __getitem__")
-            #tmp_frames: np.ndarray = np.zeros(n_timeframes,4,4)
-            #for f in value:
-                #tmp_frames[i] = f.representation
-            #self.all_frames[key] = tmp_frames
+
             self.all_frames[key] = value.all_frames
 
     @property
@@ -136,7 +129,6 @@ class FrameTrajectory:
         """
         Returns an array with all the rotation elements of this trajectory.
         """
-        #return self.frames[:self.n_timeframes,:3,:3]
         return self.all_frames[:,:3,:3]
 
     @orientations.setter
@@ -144,7 +136,6 @@ class FrameTrajectory:
         """
         Returns an array with all the rotation elements of this trajectory.
         """
-        #return self.frames[:self.n_timeframes,:3,:3]
         self.all_frames[:,:3,:3] = value
 
     @property
@@ -152,7 +143,6 @@ class FrameTrajectory:
         """
         Returns an array with all the translation elements of this trajectory.
         """
-        #return self.frames[:self.n_timeframes, :3, 3:]
         return self.all_frames[:, :3, 3:]
 
     @positions.setter
@@ -160,7 +150,6 @@ class FrameTrajectory:
         """
         Returns an array with all the translation elements of this trajectory.
         """
-        #return self.frames[:self.n_timeframes, :3, 3:]
         self.all_frames[:, :3, 3:] = value
 
     def inv(self) -> 'FrameTrajectory':
@@ -168,7 +157,7 @@ class FrameTrajectory:
         Compute the inverse of the current trajectory by making a new trajectory with the
         inverses of all frames of the current trajectory.
         """
-        inv_traj = FrameTrajectory(name="inv("+self.name+")", n_timeframes=self.n_timeframes)
+        inv_traj = FrameTrajectory(name=f"inv({self.name})", n_timeframes=self.n_timeframes)
 
         inv_traj.orientations = np.transpose(self.orientations, (0, 2, 1))
         inv_traj.positions = -np.matmul(inv_traj.orientations, self.positions)
@@ -180,10 +169,8 @@ class FrameTrajectory:
         Left multiply all elements in this trajectory with the given SE3 element and return
         the new trajectory.
         """
-        new_traj = FrameTrajectory(name='g_'+self.name, n_timeframes=self.n_timeframes)
+        new_traj = FrameTrajectory(name=f'g_{self.name}', n_timeframes=self.n_timeframes)
         grep = g.representation
-        #tmp_frames = np.matmul(grep, self.frames[:self.n_timeframes])
-        #new_traj.frames[:self.n_timeframes] = tmp_frames
         tmp_frames = np.matmul(grep, self.all_frames)
         new_traj.all_frames = tmp_frames
 
@@ -194,11 +181,8 @@ class FrameTrajectory:
         Right multiply all elements in this trajectory with the given SE3 element and
         return the new trajectory.
         """
-        new_traj = FrameTrajectory(name=self.name+'_g', n_timeframes=self.n_timeframes)
-        #new_traj = FrameTrajectory(name=self.name+f'*{g=}'.split('=')[0], timeframes=self.n_timeframes) #f-string debugging to get name of variable
+        new_traj = FrameTrajectory(name=f'{self.name}_g', n_timeframes=self.n_timeframes)
         grep = g.representation
-        #tmp_frames = np.matmul(self.frames[:self.n_timeframes], grep)
-        #new_traj.frames[:self.n_timeframes] = tmp_frames
         tmp_frames = np.matmul(self.all_frames, grep)
         new_traj.all_frames = tmp_frames
 
@@ -208,7 +192,6 @@ class FrameTrajectory:
         self.name = json_trajectory["name"]
         self.n_timeframes = 0
         for key, value in json_trajectory.items():
-            #if key is not "name" and key is not "n_timeframes" and key is not "frames":
             if key not in vars(self):
                 self.attributes[key] = value
 
@@ -252,7 +235,7 @@ class FrameTrajectory:
             raise ValueError("Trajectories do not have the same size")
 
         new_traj: FrameTrajectory = other.inv()*self
-        new_traj.name = self.name+'_rel_to_'+other.name
+        new_traj.name = f'{self.name}_rel_to_{other.name}'
 
         return new_traj
 
@@ -262,10 +245,9 @@ class FrameTrajectory:
         """
         #can do two things:
         #   1) take the exponential of the arithmatic mean of the logs of each element
-        #   2) calculate the Frechet mean of all the elements (actually the same as 1?
+        #   2) calculate the Frechet mean of all the elements (actually the same as 1?)
         mean_position = np.mean(self.positions)
         mean_orientation = expSO3(np.mean(logSO3(self.orientations)))
-        #mean_orientation = SO3.exp(np.mean(np.array([SO3.vec(SO3.log(frame.orientation)) for frame in self.frames])))
 
         return SE3element(mean_orientation, mean_position)
 
@@ -291,7 +273,7 @@ def logSO3(orientations: np.ndarray) -> np.ndarray:
         print("Angle is zero in SO3 log.Exiting")
         exit(1)
 
-    #remove the nans (they are zeroes)??!
+    #remove the nans (they are zeroes)?
     angles = np.nan_to_num(angles)
 
     fracs: np.ndarray
@@ -434,53 +416,44 @@ def reciprocal_jacobian_dets(traj1, traj2) -> np.array:
 
     return np.reciprocal(np.abs(2.*np.divide(np.ones(angs.size)-np.cos(angs),np.square(angs))))
 
-def plot_histogram(DOFs: np.ndarray, *, filename: str, label: str = "", **kwargs) -> None:
-    """
-    Plots a histogram of the given trajectory in a file with the given filename.
-    The six things plotted are the values of the rotation, and the values of the
-    translation.
-    """
-    fig, ax = plt.subplots(1, 6, figsize=(30, 5))
-    #tilt, roll, twist, shift, slide, rise = DOFs
-    fig.text(0.01, 0.5, label, fontsize=30)
-    #print(kwargs)
-    if "label_color" in kwargs:
-        fig.text(0.01, 0.5, label, color=kwargs['label_color'], fontsize=30)
-
-    for i in range(0,6):
-        ax[i].hist(DOFs[:,i], bins=50)
-    #ax[0].hist(tilt, bins=50)
-    #ax[1].hist(roll, bins=50)
-    #ax[2].hist(twist, bins=50)
-    #ax[3].hist(shift, bins=50)
-    #ax[4].hist(slide, bins=50)
-    #ax[5].hist(rise, bins=50)
-
-    for i in range(0,6):
-        ax[i].tick_params(axis='both', which='major', labelsize=30)
-
-    fig.savefig(filename)
-    plt.close()
-
-def plot_histogram_traj(traj: FrameTrajectory, *, filename: str, label: str = "", **kwargs) -> None:
-    """
-    Plots a histogram of the given trajectory in a file with the given filename.
-    The six things plotted are the values of the rotation, and the values of the
-    translation.
-    """
-    fig, ax = plt.subplots(1, 6, figsize=(30, 5))
-    #tilt, roll, twist, shift, slide, rise = DOFs
-    fig.text(0.01, 0.5, label, fontsize=30)
-    #print(kwargs)
-    if "label_color" in kwargs:
-        fig.text(0.01, 0.5, label, color=kwargs['label_color'], fontsize=30)
-
-    flat = np.concatenate((so3_to_vec(logSO3(traj.orientations)), np.squeeze(traj.positions)), axis=1)
-    for i in range(0,6):
-        ax[i].hist(flat[:,i], bins=50)
-
-    for i in range(0,6):
-        ax[i].tick_params(axis='both', which='major', labelsize=30)
-
-    fig.savefig(filename)
-    plt.close()
+#def plot_histogram(DOFs: np.ndarray, *, filename: str, label: str = "", **kwargs) -> None:
+#    """
+#    Plots a histogram of the given trajectory in a file with the given filename.
+#    The six things plotted are the values of the rotation, and the values of the
+#    translation.
+#    """
+#    fig, ax = plt.subplots(1, 6, figsize=(30, 5))
+#    fig.text(0.01, 0.5, label, fontsize=30)
+#    if "label_color" in kwargs:
+#        fig.text(0.01, 0.5, label, color=kwargs['label_color'], fontsize=30)
+#
+#    for i in range(0,6):
+#        ax[i].hist(DOFs[:,i], bins=50)
+#
+#    for i in range(0,6):
+#        ax[i].tick_params(axis='both', which='major', labelsize=30)
+#
+#    fig.savefig(filename)
+#    plt.close()
+#
+#def plot_histogram_traj(traj: FrameTrajectory, *, filename: str, label: str = "", **kwargs) -> None:
+#    """
+#    Plots a histogram of the given trajectory in a file with the given filename.
+#    The six things plotted are the values of the rotation, and the values of the
+#    translation.
+#    """
+#    fig, ax = plt.subplots(1, 6, figsize=(30, 5))
+#    fig.text(0.01, 0.5, label, fontsize=30)
+#    #print(kwargs)
+#    if "label_color" in kwargs:
+#        fig.text(0.01, 0.5, label, color=kwargs['label_color'], fontsize=30)
+#
+#    flat = np.concatenate((so3_to_vec(logSO3(traj.orientations)), np.squeeze(traj.positions)), axis=1)
+#    for i in range(0,6):
+#        ax[i].hist(flat[:,i], bins=50)
+#
+#    for i in range(0,6):
+#        ax[i].tick_params(axis='both', which='major', labelsize=30)
+#
+#    fig.savefig(filename)
+#    plt.close()
