@@ -4,7 +4,7 @@ FrameTrajectory allows for storing SE3 elements in a time ordered fashion. It ta
 
 ## Installation
 
-Simply clone this repo and `import FrameTrajectory from FrameTrajectory` in your Python script to use.
+Simply clone this repo and `from FrameTrajectory import FrameTrajectory` in your Python script to use.
 
 ## Examples
 
